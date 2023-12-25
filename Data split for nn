@@ -1,5 +1,5 @@
 import numpy as np
-
+import pundas as pd
 df_selected = new_df_with_KPI.xlsx
 
 from sklearn.model_selection import train_test_split
