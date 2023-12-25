@@ -1,3 +1,7 @@
+import numpy as np
+
+df_selected = new_df_with_KPI.xlsx
+
 from sklearn.model_selection import train_test_split
 selected_features = [
     "Возраст", "№ попытки", "Количество фолликулов", "Число ОКК",
