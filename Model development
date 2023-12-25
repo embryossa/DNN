@@ -1,0 +1,40 @@
+from keras.models import Sequential
+from keras.layers import Dense, SimpleRNN
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras import regularizers
+from keras.layers import Dropout
+from sklearn.preprocessing import StandardScaler
+from keras.regularizers import l2
+
+def create_regularized_model():
+    model = Sequential()
+    model.add(SimpleRNN(32, activation='relu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
+                        return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+    model.add(SimpleRNN(16, activation='relu', kernel_regularizer=regularizers.l1(0.001)))
+    model.add(Dropout(0.2))  # Применение Dropout для уменьшения переобучения
+    model.add(Dense(1, activation='sigmoid'))
+    adam = Adam(learning_rate=0.00001)
+    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+# Создание модели с регуляризацией
+model = create_regularized_model()
+# Параметры обучения
+epochs = 12
+batch_size = 8
+
+# Обучение модели с использованием всех трех наборов данных
+history = model.fit(X_train_reshaped, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val_reshaped, y_val))
+
+# Получение предсказанных вероятностей от модели
+y_pred = model.predict(X_test_reshaped)
+
+# Оценка модели на тестовом наборе
+test_loss, test_accuracy = model.evaluate(X_test_reshaped, y_test)
+
+train_accuracy = history.history['accuracy']
+
+print(f'Точность модели на тестовых данных: {test_accuracy}')
+
+# Сохранение модели в файл
+model.save('Prediction_fitted_score.h5')
