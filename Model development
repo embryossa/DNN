@@ -19,6 +19,7 @@ def create_regularized_model():
 
 # Создание модели с регуляризацией
 model = create_regularized_model()
+
 # Параметры обучения
 epochs = 12
 batch_size = 8
