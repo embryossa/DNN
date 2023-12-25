@@ -1,17 +1,18 @@
 from keras.models import load_model
 import joblib
+
 # Загрузка нейросетевой модели
 loaded_neural_network_model = load_model('neural_network_model.h5')
-
 # Загрузка калиброванной модели
 loaded_calibrated_model = joblib.load('calibrated_model.pkl')
 
-import pandas as pd
+'''
+#Расчет KPI
+'''
 
+import pandas as pd
 # Загрузка данных из Excel-файла в DataFrame
 new_df = pd.read_excel('DNN_GGRC.xlsx')
-
-# Преобразование столбцов в числовой формат, если они не содержат числовые значения
 columns_to_convert = ['День переноса']
 
 for col in columns_to_convert:
@@ -23,7 +24,7 @@ new_df['Частота формирования бластоцист'] = new_df[
 new_df['Частота формирования бластоцист хорошего качества'] = new_df['Число Bl хор.кач-ва'] / new_df['2 pN']
 new_df['Частота получения ОКК'] = new_df['Число ОКК'] / new_df['Количество фолликулов']
 
-# Создаем функцию для расчета баллов в соответствии с вашими условиями
+# Создаем функцию для расчета баллов 
 def calculate_kpi_score(row):
     kpi_score = 0
 
@@ -74,6 +75,11 @@ new_df['KPIScore'] = new_df.apply(calculate_kpi_score, axis=1)
 
 print(new_df)
 new_df.to_excel('new_df_with_KPI.xlsx', index=False)
+
+'''
+# Выбор признаков и подготовка данных для прогноза
+'''
+
 from sklearn.preprocessing import StandardScaler
 
 # Замена отсутствующих значений на 0 в датафрейме new_df
@@ -99,6 +105,10 @@ new_df_normalized = scaler.fit_transform(new_df[selected_features])
 # Изменение формата данных
 new_df_reshaped = new_df_normalized.reshape((new_df_normalized.shape[0], new_df_normalized.shape[1], 1))
 
+'''
+# Предсказания модели и их калибровка для получения вероятностей
+'''
+
 # Предсказание значения для целевой переменной с использованием нейросетевой модели
 new_predictions_neural_network = loaded_neural_network_model.predict(new_df_reshaped)
 
@@ -106,7 +116,7 @@ new_predictions_neural_network = loaded_neural_network_model.predict(new_df_resh
 print("Предсказания с использованием нейросетевой модели:")
 print(new_predictions_neural_network)
 
-# Если вы используете калиброванную модель, примените ее
+# Калибровка логистической регрессией
 if 'loaded_calibrated_model' in locals():
     # Предварительные вероятности из нейросетевой модели
     new_probabilities = loaded_neural_network_model.predict(new_df_reshaped)
@@ -117,6 +127,11 @@ if 'loaded_calibrated_model' in locals():
     # Печать предсказанных значений с использованием калиброванной модели
     print("\nПредсказания с использованием калиброванной модели:")
     print(new_predictions_calibrated)
+
+'''
+# Определение порога и сохранение в таблицу результатов
+'''
+
 new_df['Predicted_Исход переноса_беременность клиническая'] = new_predictions_calibrated
 # Порог вероятности для принятия решения
 threshold = 0.5
@@ -130,6 +145,10 @@ pregnancy_yes_count = (new_df['Predicted_Исход переноса_берем�
 total_count = len(new_df['Predicted_Исход переноса_беременность клиническая'])
 pregnancy_frequency = pregnancy_yes_count / total_count
 print(f'ЧНБ: {pregnancy_frequency:.2%}')
+
+'''
+# График для сравнения Actual vs Predicted 
+'''
 
 import seaborn as sns
 import matplotlib.pyplot as plt
