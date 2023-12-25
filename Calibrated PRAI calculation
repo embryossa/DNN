@@ -1,0 +1,150 @@
+from keras.models import load_model
+import joblib
+# Загрузка нейросетевой модели
+loaded_neural_network_model = load_model('neural_network_model.h5')
+
+# Загрузка калиброванной модели
+loaded_calibrated_model = joblib.load('calibrated_model.pkl')
+
+import pandas as pd
+
+# Загрузка данных из Excel-файла в DataFrame
+new_df = pd.read_excel('DNN_GGRC.xlsx')
+
+# Преобразование столбцов в числовой формат, если они не содержат числовые значения
+columns_to_convert = ['День переноса']
+
+for col in columns_to_convert:
+    new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+
+new_df['Частота оплодотворения'] = new_df['2 pN'] / new_df['Число инсеминированных']
+new_df['Частота дробления'] = new_df['Число дробящихся на 3 день'] / new_df['2 pN']
+new_df['Частота формирования бластоцист'] = new_df['Число Bl'] / new_df['2 pN']
+new_df['Частота формирования бластоцист хорошего качества'] = new_df['Число Bl хор.кач-ва'] / new_df['2 pN']
+new_df['Частота получения ОКК'] = new_df['Число ОКК'] / new_df['Количество фолликулов']
+
+# Создаем функцию для расчета баллов в соответствии с вашими условиями
+def calculate_kpi_score(row):
+    kpi_score = 0
+
+    # Условия для столбца "Возраст"
+    if row['Возраст'] >= 40:
+        kpi_score += 1
+    elif row['Возраст'] <= 36:
+        kpi_score += 5
+    else:
+        kpi_score += 3
+
+    # Условия для столбца "Количество фолликулов"
+    if row['Количество фолликулов'] > 15:
+        kpi_score += 5
+    elif 8 <= row['Количество фолликулов'] <= 15:
+        kpi_score += 3
+    else:
+        kpi_score += 1
+
+    # Условия для столбца "Число инсеминированных"
+    if row['Число инсеминированных'] <= 3:
+        kpi_score += 1
+    elif 4 <= row['Число инсеминированных'] <= 7:
+        kpi_score += 3
+    else:
+        kpi_score += 5
+
+    # Условия для столбца "Частота оплодотворения"
+    if row['Частота оплодотворения'] < 0.5:
+        kpi_score += 1
+    elif row['Частота оплодотворения'] <= 0.65:
+        kpi_score += 3
+    else:
+        kpi_score += 5
+
+    # Условия для столбца "Число Bl хор.кач-ва"
+    if row['Число Bl хор.кач-ва'] == 0:
+        kpi_score += 1
+    elif row['Число Bl хор.кач-ва'] <= 2:
+        kpi_score += 3
+    else:
+        kpi_score += 5
+
+    return kpi_score
+
+# Применяем функцию для создания столбца "KPIScore"
+new_df['KPIScore'] = new_df.apply(calculate_kpi_score, axis=1)
+
+print(new_df)
+new_df.to_excel('new_df_with_KPI.xlsx', index=False)
+from sklearn.preprocessing import StandardScaler
+
+# Замена отсутствующих значений на 0 в датафрейме new_df
+new_df.fillna(0, inplace=True)
+
+# Выбор признаков для прогнозирования
+selected_features = [
+    "Возраст", "№ попытки", "Количество фолликулов", "Число ОКК",
+    "Число инсеминированных", "2 pN", "Число дробящихся на 3 день",
+    "Число Bl хор.кач-ва", "Частота оплодотворения", "Число Bl",
+    "Частота дробления", "Частота формирования бластоцист",
+    "Частота формирования бластоцист хорошего качества", "Частота получения ОКК",
+    "Число эмбрионов 5 дня", "Заморожено эмбрионов", "Перенесено эмбрионов",
+    "KPIScore"
+]
+
+# Создание экземпляра класса StandardScaler
+scaler = StandardScaler()
+
+# Нормализация данных
+new_df_normalized = scaler.fit_transform(new_df[selected_features])
+
+# Изменение формата данных
+new_df_reshaped = new_df_normalized.reshape((new_df_normalized.shape[0], new_df_normalized.shape[1], 1))
+
+# Предсказание значения для целевой переменной с использованием нейросетевой модели
+new_predictions_neural_network = loaded_neural_network_model.predict(new_df_reshaped)
+
+# Печать предсказанных значений с использованием нейросетевой модели
+print("Предсказания с использованием нейросетевой модели:")
+print(new_predictions_neural_network)
+
+# Если вы используете калиброванную модель, примените ее
+if 'loaded_calibrated_model' in locals():
+    # Предварительные вероятности из нейросетевой модели
+    new_probabilities = loaded_neural_network_model.predict(new_df_reshaped)
+
+    # Предсказание значения для целевой переменной с использованием калиброванной модели
+    new_predictions_calibrated = loaded_calibrated_model.predict_proba(new_probabilities)[:, 1]
+
+    # Печать предсказанных значений с использованием калиброванной модели
+    print("\nПредсказания с использованием калиброванной модели:")
+    print(new_predictions_calibrated)
+new_df['Predicted_Исход переноса_беременность клиническая'] = new_predictions_calibrated
+# Порог вероятности для принятия решения
+threshold = 0.5
+
+# Замена вероятностей на категории "да" или "нет"
+new_df['Predicted_Исход переноса_беременность клиническая'] = new_df['Predicted_Исход переноса_беременность клиническая'].apply(lambda x: "да" if x > threshold else "нет")
+
+# Сохранение датафрейма в файл Excel
+new_df.to_excel('предсказания.xlsx', index=False)
+pregnancy_yes_count = (new_df['Predicted_Исход переноса_беременность клиническая'] == 'да').sum()
+total_count = len(new_df['Predicted_Исход переноса_беременность клиническая'])
+pregnancy_frequency = pregnancy_yes_count / total_count
+print(f'ЧНБ: {pregnancy_frequency:.2%}')
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+x = 0.3666
+y = 0.36
+
+plt.figure(figsize=(4, 4))
+
+# Добавляем два полупрозрачных столбца для каждого квартала
+plt.bar([0], [x], color='blue', alpha=0.4, label='Predicted')
+plt.bar([0.2], [y], color='green', alpha=0.4, label='Actual')
+
+plt.title('Сравнение частоты беременности: Predicted vs Actual')
+plt.xticks([])
+plt.ylabel('ЧНБ')
+plt.legend(loc='lower center')
+plt.show()
