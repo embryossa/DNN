@@ -37,4 +37,4 @@ train_accuracy = history.history['accuracy']
 print(f'Точность модели на тестовых данных: {test_accuracy}')
 
 # Сохранение модели в файл
-model.save('Prediction_fitted_score.h5')
+model.save('neural_network_model.h5')
