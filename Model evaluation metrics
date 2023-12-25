@@ -7,6 +7,10 @@ plt.legend()
 plt.title('Loss')
 plt.show()
 
+'''
+# Accuracy и График обучения
+'''
+
 # Построение графика точности
 plt.plot(history.history['accuracy'], label='train')
 plt.plot(history.history['val_accuracy'], label='val')
@@ -14,6 +18,10 @@ plt.axhline(y=test_accuracy, color='r', linestyle='--', label='test')
 plt.legend()
 plt.title('Accuracy')
 plt.show()
+
+'''
+#ROC-AUC
+'''
 
 from sklearn.metrics import roc_curve, auc
 
@@ -45,6 +53,10 @@ plt.show()
 
 print(f"Optimal Threshold: {optimal_threshold}")
 
+'''
+#Precision, Accuracy
+'''
+
 from sklearn.metrics import precision_recall_curve, auc, roc_curve, roc_auc_score, accuracy_score, precision_score, recall_score, average_precision_score
 
 # Получение предсказаний модели на тестовых данных
@@ -73,6 +85,10 @@ plt.legend(loc='lower left')
 plt.show()
 
 print(f"Optimal Threshold (Precision-Recall): {optimal_threshold_pr}")
+
+'''
+# Metrix
+'''
 
 from sklearn.metrics import confusion_matrix
 
