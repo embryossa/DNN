@@ -128,6 +128,10 @@ if 'loaded_calibrated_model' in locals():
     print("\nПредсказания с использованием калиброванной модели:")
     print(new_predictions_calibrated)
 
+    # Создаем DataFrame с предсказаниями
+    predictions_df = pd.DataFrame({'Predictions': new_predictions_calibrated})
+    predictions_df.to_excel('вероятности.xlsx', index=False)
+
 '''
 # Определение порога и сохранение в таблицу результатов
 '''
