@@ -92,10 +92,6 @@ def calculate_kpi_score(row):
 # Применяем функцию для создания столбца "KPIScore"
 df_selected['KPIScore'] = df_selected.apply(calculate_kpi_score, axis=1)
 
-# Добавляем условие по столбцу KPIScore
-df_selected.loc[(df_selected['KPIScore'] < 15) & (df_selected['Исход переноса'].isna()), 'Исход переноса'] = 0
-df_selected.loc[(df_selected['KPIScore'] > 21) & (df_selected['Исход переноса'].isna()), 'Исход переноса'] = 1
-
 # Замена отсутствующих значений на 0 в выбранных признаках
 df_selected.fillna(0, inplace=True)
 
