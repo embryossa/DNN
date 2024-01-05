@@ -1,4 +1,4 @@
-The neural network model for assessing the likelihood of clinical pregnancy occurrence in a specific in vitro fertilization (IVF) protocol:
+# The neural network model for assessing the likelihood of clinical pregnancy occurrence in a specific in vitro fertilization (IVF) protocol:
 
 The developed deep neural network serves as a unique tool for IVF clinics, aiming to enhance the efficiency of internal quality control and the determination of its target indicators. This model, based on recurrent neural networks, exhibits high accuracy in predicting the occurrence or absence of clinical pregnancy in a specific IVF protocol (AUC 0.68-0.86; Test accuracy 0.78, F1 Score 0.71).
 
