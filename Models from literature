@@ -1,0 +1,325 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from keras.models import Sequential
+from keras.layers import Dense, SimpleRNN, LSTM, Conv1D
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras import regularizers
+from keras.layers import Dropout
+from sklearn.preprocessing import StandardScaler
+from keras.regularizers import l2
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras import initializers
+
+'''
+#Nature (Goyal et al., 2020)
+'''
+
+# Функция для создания модели 
+def create_regularized_model():
+    model = Sequential()
+    model.add(Dense(32, activation='relu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]), kernel_regularizer=regularizers.l2(0.01)))
+    model.add(Dense(64, activation='relu', kernel_regularizer=regularizers.l1(0.001)))
+    model.add(Dropout(0.1))
+    model.add(Dense(128, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+    model.add(Dense(256, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+    model.add(BatchNormalization())
+    model.add(Dense(512, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+    model.add(Dropout(0.2))
+    model.add(Dense(256, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+    model.add(Dense(128, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+    model.add(Dropout(0.1))
+    model.add(Dense(64, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+    model.add(Dense(32, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+    model.add(Dense(1, activation='sigmoid'))
+
+    adam = Adam(learning_rate=0.0001)
+    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+# Создание модели с регуляризацией
+model = create_regularized_model()
+# Параметры обучения
+epochs = 50
+batch_size = 8
+
+# Обучение модели с использованием всех трех наборов данных
+history = model.fit(X_train_reshaped, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val_reshaped, y_val))
+
+# Получение предсказанных вероятностей от модели
+y_pred = model.predict(X_test_reshaped)
+
+# Оценка модели на тестовом наборе
+test_loss, test_accuracy = model.evaluate(X_test_reshaped, y_test)
+
+train_accuracy = history.history['accuracy']
+
+print(f'Точность модели на тестовых данных: {test_accuracy}')
+
+# Сохранение модели в файл
+model.save('DL_model.h5')
+
+'''
+#STEAM (Liao et al., 2021) https://doi.org/10.1038/s42003-021-01937-1
+'''
+# Функция для создания модели
+def create_regularized_model():
+    model = Sequential()
+    model.add(LSTM(256, activation='elu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
+                        return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+    model.add(LSTM(128))
+    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='sigmoid'))
+
+    model.compile(loss='binary_crossentropy',
+              optimizer='adam',
+              metrics=['accuracy'])
+
+    return model
+
+# Создание модели с регуляризацией
+model = create_regularized_model()
+# Параметры обучения
+epochs = 12
+batch_size = 256
+
+'''
+#Benchaib et al., 2022 https://doi.org/10.1002/rmb2.12486
+'''
+
+# Функция для создания модели
+def create_regularized_model():
+    model = Sequential()
+    model.add(SimpleRNN(26, activation='tanh', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
+                        return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+    model.add(Dropout(0.2))
+    model.add(SimpleRNN(26, activation='tanh', return_sequences=True, kernel_regularizer=regularizers.l1(0.001)))
+    model.add(Dropout(0.2))
+    model.add(SimpleRNN(26, activation='tanh', return_sequences=False, kernel_regularizer=regularizers.l1(0.001)))
+    model.add(Dropout(0.2))
+    model.add(Dense(1, activation='sigmoid'))
+    adam = Adam(learning_rate=0.001)
+    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+# Создание модели с регуляризацией
+model = create_regularized_model()
+# Параметры обучения
+epochs = 12
+batch_size = 32
+
+'''
+Vogiatzi et al.,2019. doi:10.1007/s10815-019-01498-7
+'''
+# Функция для создания модели с применением регуляризации L2 и Dropout
+def create_regularized_model():
+    model = Sequential()
+    model.add(Dense(10, activation='relu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
+                        return_sequences=True))
+    model.add(Dense(2, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    adam = Adam(learning_rate=0.0001)
+    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+# Параметры обучения
+epochs = 8
+batch_size = 8
+
+'''
+#XGBoost combo DOI: 10.1093/humrep/dead023
+'''
+import numpy as np
+import matplotlib.pyplot as plt
+from keras.models import Sequential
+from keras.layers import Dense, SimpleRNN, Dropout
+from tensorflow.keras.optimizers import Adam
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.preprocessing import StandardScaler
+from keras.regularizers import l2
+import xgboost as xgb
+from sklearn.linear_model import LogisticRegression
+from imblearn.over_sampling import RandomOverSampler
+
+selected_features = [
+    "Возраст", "№ попытки", "Количество фолликулов", "Число ОКК",
+    "Число инсеминированных", "2 pN", "Число дробящихся на 3 день",
+    "Число Bl хор.кач-ва", "Частота оплодотворения", "Число Bl",
+    "Частота дробления", "Частота формирования бластоцист",
+    "Частота формирования бластоцист хорошего качества", "Частота получения ОКК",
+    "Число эмбрионов 5 дня", "Заморожено эмбрионов", "Перенесено эмбрионов",
+    "KPIScore"
+]
+
+# Загрузка данных из DataFrame и разделение на признаки и целевую переменную
+X = df_selected[selected_features]
+y = df_selected['Исход переноса']
+
+# Разделение на обучающий, валидационный и тестовый наборы
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.2, random_state=42)
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.2, random_state=42)
+
+# Создание StandardScaler
+scaler = StandardScaler()
+
+# Изменение формата данных для обучения модели
+X_train_reshaped = scaler.fit_transform(X_train).reshape((X_train.shape[0], X_train.shape[1], 1))
+X_val_reshaped = scaler.transform(X_val).reshape((X_val.shape[0], X_val.shape[1], 1))
+X_test_reshaped = scaler.transform(X_test).reshape((X_test.shape[0], X_test.shape[1], 1))
+
+# Оверсэмплинг
+ros = RandomOverSampler(random_state=42)
+X_train_reshaped_over, y_train_over = ros.fit_resample(X_train_reshaped.reshape((X_train_reshaped.shape[0], -1)), y_train)
+
+# Изменение формата данных после оверсэмплинга
+X_train_reshaped_over = X_train_reshaped_over.reshape((X_train_reshaped_over.shape[0], X_train_reshaped.shape[1], 1))
+
+
+# Функция для создания модели с применением регуляризации L2 и Dropout
+def create_regularized_model():
+    model = Sequential()
+    model.add(SimpleRNN(32, activation='relu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
+                        return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+    model.add(SimpleRNN(16, activation='relu', kernel_regularizer=regularizers.l1(0.001)))
+    model.add(Dropout(0.2))  # Применение Dropout для уменьшения переобучения
+    model.add(Dense(1, activation='sigmoid'))
+    adam = Adam(learning_rate=0.00001)
+    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+# Параметры обучения
+epochs = 12
+batch_size = 8
+
+# Create the regularized model
+nn_model = create_regularized_model()
+
+# Train the neural network model and store the training history
+history_nn = nn_model.fit(X_train_reshaped_over, y_train_over, epochs=epochs, batch_size=batch_size, validation_data=(X_val_reshaped, y_val))
+
+# Create DMatrix objects for XGBoost
+dtrain = xgb.DMatrix(X_train, label=y_train)
+dval = xgb.DMatrix(X_val, label=y_val)
+dtest = xgb.DMatrix(X_test, label=y_test)
+
+# Define parameters for XGBoost
+params = {
+    'objective': 'binary:logistic',
+    'eval_metric': 'logloss',
+    'eta': 0.1,
+    'max_depth': 6,
+    'subsample': 0.8,
+    'colsample_bytree': 0.8,
+    'seed': 42
+}
+
+# Train the XGBoost model
+num_rounds = 300
+watchlist = [(dtrain, 'train'), (dval, 'eval')]
+xgb_model = xgb.train(params, dtrain, num_rounds, evals=watchlist, early_stopping_rounds=10)
+
+# Make predictions on the test set
+y_pred = xgb_model.predict(dtest)
+
+# Преобразуем DataFrame в DMatrix для XGBoost
+dtest = xgb.DMatrix(X_test)
+
+# Обучение модели логистической регрессии
+lr_model = LogisticRegression()
+lr_model.fit(X_train, y_train)
+
+# Пороговые значения KPIScore для принятия решения
+threshold_pregnant = 20.4 + 3.7 / 2  # Верхний предел для беременности
+threshold_non_pregnant = 15.9 - 5 / 2  # Нижний предел для отсутствия беременности
+
+
+# Получение предсказаний от нейросети
+y_pred_proba_nn = nn_model.predict(X_test_reshaped)
+y_pred_nn = np.where(X_test['KPIScore'] > threshold_pregnant, 1, 0) if np.any(y_pred_proba_nn > 0.5) else 0
+
+
+# Получение предсказаний от XGBoost
+y_pred_xgb = xgb_model.predict(dtest)
+
+# Получение предсказаний от логистической регрессии
+y_pred_proba_lr = lr_model.predict_proba(X_test)[:, 1]
+y_pred_lr = np.where(X_test['KPIScore'] > threshold_pregnant, 1, 0) if np.any(y_pred_proba_lr > 0.5) else 0
+
+# Объединение предсказаний в dataframe
+y_pred_combined = pd.DataFrame({'nn': y_pred_nn.ravel(),
+                                'xgb': y_pred_xgb,
+                                'lr': y_pred_lr})
+
+# Усреднение предсказаний
+y_pred_combined['mean'] = y_pred_combined.mean(axis=1)
+
+# Порог 0.5 для бинарной классификации
+y_pred_combined['pred'] = y_pred_combined['mean'].map(lambda x: 1 if x > 0.5 else 0)
+
+# Оценка модели на тестовом наборе
+test_accuracy_combined = accuracy_score(y_test, y_pred_combined['pred'])
+
+model.save('combined_model.h5')
+
+# Метрики качества
+print('ROC AUC:', roc_auc_score(y_test, y_pred_combined['pred']))
+print('Accuracy:', accuracy_score(y_test, y_pred_combined['pred']))
+print('Precision:', precision_score(y_test, y_pred_combined['pred']))
+print('Recall:', recall_score(y_test, y_pred_combined['pred']))
+
+from sklearn.metrics import precision_recall_curve, auc, roc_curve, roc_auc_score, accuracy_score, precision_score, recall_score
+import matplotlib.pyplot as plt
+
+# Assuming 'mean' column in y_pred_combined is the probability of the positive class
+y_pred_proba_combined = y_pred_combined['mean']
+
+# Compute precision and recall
+precision, recall, thresholds = precision_recall_curve(y_test, y_pred_proba_combined)
+
+# Compute area under the precision-recall curve (AUC-PR)
+pr_auc = auc(recall, precision)
+
+# Compute false positive rate and true positive rate for ROC curve
+fpr, tpr, thresholds_roc = roc_curve(y_test, y_pred_proba_combined)
+
+# Compute area under the ROC curve (AUC-ROC)
+roc_auc = roc_auc_score(y_test, y_pred_proba_combined)
+
+# Plot precision-recall curve
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 2, 1)
+plt.plot(recall, precision, color='b', label=f'PR AUC = {pr_auc:.2f}')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall Curve for Combined Model')
+plt.legend(loc='best')
+
+# Plot ROC curve
+plt.subplot(1, 2, 2)
+plt.plot(fpr, tpr, color='r', label=f'ROC AUC = {roc_auc:.2f}')
+plt.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Random')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve for Combined Model')
+plt.legend(loc='best')
+
+plt.tight_layout()
+plt.show()
+
+'''
+#GET model wights
+'''
+
+def get_layer_weights(model):
+    layer_weights = []
+    for layer in model.layers:
+        weights = layer.get_weights()
+        layer_weights.append(weights)
+    return layer_weights
+
+# Получение весов слоев вашей модели
+model_weights = get_layer_weights(model)
+
+
