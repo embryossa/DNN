@@ -1,0 +1,31 @@
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import brier_score_loss
+import joblib
+
+# Получение предсказаний модели на тестовых данных
+y_pred = model.predict(X_test_reshaped).ravel()
+
+# Разделение данных на обучающую и тестовую выборки для калибровки
+X_calibration, X_valid, y_calibration, y_valid = train_test_split(X_test_reshaped, y_test, test_size=0.2, random_state=42)
+
+# Создание объекта логистической регрессии для калибровки
+base_classifier = LogisticRegression()
+calibrated_classifier = CalibratedClassifierCV(base_classifier, method='sigmoid', cv='prefit')
+
+# Обучение базового классификатора
+base_classifier.fit(X_calibration.reshape(X_calibration.shape[0], -1), y_calibration)
+
+# Обучение калиброванного классификатора на отдельной выборке
+calibrated_classifier.fit(X_valid.reshape(X_valid.shape[0], -1), y_valid)
+
+# Калибровка предсказаний
+y_calibrated = calibrated_classifier.predict_proba(X_valid.reshape(X_valid.shape[0], -1))[:, 1]
+
+# Оценка качества калибровки с использованием Brier Score
+brier_score = brier_score_loss(y_valid, y_calibrated)
+print(f"Brier Score Loss after calibration: {brier_score}")
+
+# Сохранение калиброванной модели в файл
+joblib.dump(calibrated_classifier, 'Calibrated_Model.joblib')
