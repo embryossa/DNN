@@ -1,0 +1,92 @@
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.model_selection import KFold
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+# Создание модели с регуляризацией
+model = create_regularized_model()
+
+# Количество фолдов
+k_folds = 5
+
+# Результаты для каждого запуска
+val_metrics_before_lr = []
+val_metrics_after_lr = []
+
+# Метрики для каждого фолда
+sensitivity_list = []
+specificity_list = []
+ppv_list = []
+npv_list = []
+fpr_list = []
+fnr_list = []
+accuracy_list = []
+odds_ratio_list = []
+
+# Кросс-валидация
+kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+for train_index, val_index in kf.split(X_train_reshaped):
+
+    X_train, X_val = X_train_reshaped[train_index], X_train_reshaped[val_index]
+    y_train, y_val = y.iloc[train_index], y.iloc[val_index]
+
+    # Обучение модели
+    model.fit(X_train, y_train, epochs=12, batch_size=8, verbose=0)
+
+    # Предсказания на валидационных данных до применения логистической регрессии
+    y_pred_val_before_lr = model.predict(X_val)
+
+    # Оценка результатов до применения логистической регрессии
+    acc_before_lr = accuracy_score(y_val, (y_pred_val_before_lr > 0.5).astype(int))
+    val_metrics_before_lr.append(acc_before_lr)
+
+    # Создание объекта логистической регрессии для калибровки
+    base_classifier = LogisticRegression()
+    calibrated_classifier = CalibratedClassifierCV(base_classifier, method='sigmoid', cv='prefit')
+
+    # Обучение базового классификатора
+    base_classifier.fit(X_train.reshape(X_train.shape[0], -1), y_train)
+
+    # Обучение калиброванного классификатора на отдельной выборке
+    calibrated_classifier.fit(X_val.reshape(X_val.shape[0], -1), y_val)
+
+    # Калибровка предсказаний
+    y_pred_val_calibrated = calibrated_classifier.predict_proba(X_val.reshape(X_val.shape[0], -1))[:, 1]
+
+    # Оценка результатов после применения логистической регрессии
+    acc_after_lr = accuracy_score(y_val, (y_pred_val_calibrated > 0.5).astype(int))
+    val_metrics_after_lr.append(acc_after_lr)
+
+    # Расчет матрицы ошибок
+    conf_matrix_before_lr = confusion_matrix(y_val, (y_pred_val_before_lr > 0.5).astype(int))
+    conf_matrix_after_lr = confusion_matrix(y_val, (y_pred_val_calibrated > 0.5).astype(int))
+
+    # Расчет метрик для каждого фолда
+    tn, fp, fn, tp = conf_matrix_before_lr.ravel()
+    sensitivity = tp / (tp + fn)
+    specificity = tn / (tn + fp)
+    ppv = tp / (tp + fp)
+    npv = tn / (tn + fn)
+    fpr = fp / (fp + tn)
+    fnr = fn / (fn + tp)
+    accuracy = (tp + tn) / (tp + tn + fp + fn)
+    odds_ratio = (tp * tn) / (fp * fn)
+
+    # Добавление метрик в списки
+    sensitivity_list.append(sensitivity)
+    specificity_list.append(specificity)
+    ppv_list.append(ppv)
+    npv_list.append(npv)
+    fpr_list.append(fpr)
+    fnr_list.append(fnr)
+    accuracy_list.append(accuracy)
+    odds_ratio_list.append(odds_ratio)
+
+# Вывод метрик для каждого фолда
+for i in range(k_folds):
+    print(f'Fold {i + 1}:')
+    print(f'Sensitivity: {sensitivity_list[i]}, Specificity: {specificity_list[i]}, PPV: {ppv_list[i]}, NPV: {npv_list[i]}, FPR: {fpr_list[i]}, FNR: {fnr_list[i]}, Accuracy: {accuracy_list[i]}, Odds Ratio: {odds_ratio_list[i]}')
+    print()
+
+# Вывод средних значений метрик
+print('Средние значения:')
+print(f'Sensitivity: {np.mean(sensitivity_list)}, Specificity: {np.mean(specificity_list)}, PPV: {np.mean(ppv_list)}, NPV: {np.mean(npv_list)}, FPR: {np.mean(fpr_list)}, FNR: {np.mean(fnr_list)}, Accuracy: {np.mean(accuracy_list)}, Odds Ratio: {np.mean(odds_ratio_list)}')
