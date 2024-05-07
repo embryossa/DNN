@@ -20,6 +20,10 @@ Pandas 2.2.2
 Seaborn 0.13.2
 Matplotlib 3.8.4
 
+# For explanations
+LIME 0.2.0.1
+SHAP 0.45.0
+
 ## Usage
 
 1. Import necessary libraries:
