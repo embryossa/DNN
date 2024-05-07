@@ -1,0 +1,62 @@
+from lime import lime_tabular
+
+# Загрузка сохраненной модели
+from keras.models import load_model
+model = load_model('Prediction_fitted_score.h5')
+
+import pandas as pd
+
+# Reshape the predicted probabilities to 2D array
+y_pred_reshaped = y_pred.reshape(-1, 1)  # Assuming your model predicts probabilities for one class
+
+# Get the neighborhood_labels for LIME
+neighborhood_labels = np.hstack((1 - y_pred_reshaped, y_pred_reshaped))  # Assuming binary classification
+
+# Получение объяснения от LIME для выбранного примера
+exp = explainer.explain_instance(instance.flatten(), model.predict, num_features=len(selected_features), labels=(0, 0))
+
+# Вывод объяснения
+exp.show_in_notebook()
+
+''' 
+For a single protocol LIME explanations
+'''
+# Получение предсказания модели для нового примера
+new_instance_index = 29  # индекс нового примера
+new_instance = X_test_reshaped[new_instance_index]  # получение нового примера из тестового набора
+new_instance_pred = model.predict(new_instance.reshape(1, -1))  # предсказание модели для нового примера
+
+# Подготовка данных для LIME
+new_instance_flattened = new_instance.flatten()
+
+# Получение объяснения от LIME для нового примера
+new_exp = explainer.explain_instance(new_instance_flattened, model.predict, num_features=len(selected_features), labels=(0, 0))
+
+# Вывод объяснения для нового примера
+new_exp.show_in_notebook()
+
+'''
+Prediction visualisation
+'''
+import seaborn as sns
+
+# Получаем предсказания модели на тестовом наборе данных
+y_pred = nn_classifier_all.predict(X_test_reshaped_all)
+
+# Объединяем предсказания с исходными данными
+df_results = X_test.copy()
+df_results['Actual'] = y_test.values
+df_results['Predicted'] = y_pred
+
+# Визуализация распределения признаков для каждого класса
+sns.pairplot(df_results, hue='Actual', diag_kind='hist')
+plt.show()
+
+# Визуализация boxplot для каждого признака
+plt.figure(figsize=(12, 8))
+sns.boxplot(x='Actual', y='Частота формирования бластоцист хорошего качества', data=df_results)
+plt.show()
+
+plt.figure(figsize=(12, 8))
+sns.boxplot(x='Actual', y='KPIScore', data=df_results)
+plt.show()
