@@ -1,0 +1,49 @@
+import shap
+import numpy as np
+from tensorflow.keras.models import load_model
+
+model = load_model('Prediction_fitted_score.h5')
+def preprocess_input_data(X):
+    return X
+
+# Загрузите и предобработайте данные
+X_train_processed = preprocess_input_data(X_train)
+X_test_processed = preprocess_input_data(X_test)
+background_samples = shap.sample(X_train_processed, 10)
+
+# Инициализируйте SHAP Explainer с использованием Kernel Explainer 
+explainer = shap.KernelExplainer(model.predict, background_samples)
+
+shap_values = explainer.shap_values(X_test_processed)
+np.save('shap_values.npy', shap_values)
+
+shap.summary_plot(shap_values, X_test_processed)
+
+for feature_name1 in X_test_processed.columns:
+    for feature_name2 in X_test_processed.columns:
+        if feature_name1 != feature_name2:
+            shap.dependence_plot(feature_name1, shap_values, X_test_processed, interaction_index=feature_name2)
+import seaborn as sns
+
+# Переведите SHAP-значения в DataFrame для удобства визуализации
+shap_df = pd.DataFrame(shap_values, columns=X_test_processed.columns)
+
+# Вычислите среднее значение абсолютных SHAP-значений для каждого признака
+mean_shap_values = shap_df.abs().mean()
+
+# Отсортируйте значения по убыванию
+mean_shap_values_sorted = mean_shap_values.sort_values(ascending=False)
+
+# Постройте тепловую карту SHAP-значений
+plt.figure(figsize=(10, 8))
+sns.heatmap(shap_df[mean_shap_values_sorted.index], cmap='coolwarm', center=0)
+plt.title('SHAP Values Heatmap')
+plt.xlabel('Features')
+plt.ylabel('Samples')
+plt.show()
+
+# Постройте матрицу корреляции между признаками
+plt.figure(figsize=(10, 8))
+sns.heatmap(X_test_processed.corr(), annot=True, cmap='coolwarm', fmt=".2f")
+plt.title('Feature Correlation Heatmap')
+plt.show()
