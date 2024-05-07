@@ -68,11 +68,12 @@ The script begins by loading a pre-trained neural network model (`neural_network
 
 Ensure you have the following Python libraries installed:
 
-- Keras
-- TensorFlow
-- Scikit-learn
-- NumPy
-- Pandas
-- Seaborn
-- Matplotlib
+- Keras 2.14.0
+- TensorFlow 2.14.0
+- Scikit-learn 1.14.2
+- Joblib 1.4.2
+- NumPy 1.26.4
+- Pandas 2.2.2
+- Seaborn 0.13.2
+- Matplotlib 3.8.4
 
