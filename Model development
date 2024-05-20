@@ -1,41 +1,77 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
 from keras.models import Sequential
-from keras.layers import Dense, SimpleRNN
+from keras.layers import Dense, SimpleRNN, Dropout
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras import regularizers
-from keras.layers import Dropout
 from sklearn.preprocessing import StandardScaler
 from keras.regularizers import l2
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 
-def create_regularized_model():
-    model = Sequential()
-    model.add(SimpleRNN(32, activation='relu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
-                        return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
-    model.add(SimpleRNN(16, activation='relu', kernel_regularizer=regularizers.l1(0.001)))
-    model.add(Dropout(0.2))  
-    model.add(Dense(1, activation='sigmoid'))
-    adam = Adam(learning_rate=0.00001)
-    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
-    return model
+selected_features = [
+    "Возраст", "№ попытки", "Количество фолликулов", "Число ОКК",
+    "Число инсеминированных", "2 pN", "Число дробящихся на 3 день",
+    "Число Bl хор.кач-ва", "Частота оплодотворения", "Число Bl",
+    "Частота дробления", "Частота формирования бластоцист",
+    "Частота формирования бластоцист хорошего качества", "Частота получения ОКК",
+    "Число эмбрионов 5 дня", "Заморожено эмбрионов", "Перенесено эмбрионов",
+    "KPIScore"
+]
 
-# Создание модели с регуляризацией
-model = create_regularized_model()
+# Загрузка данных из DataFrame и разделение на признаки и целевую переменную
+X = df_selected[selected_features]
+y = df_selected['Исход переноса']
 
-# Параметры обучения
-epochs = 12
-batch_size = 8
+# Разделение на обучающий, валидационный и тестовый наборы
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.2, random_state=42)
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.2, random_state=42)
 
-# Обучение модели с использованием всех трех наборов данных
-history = model.fit(X_train_reshaped, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val_reshaped, y_val))
+# Создание экземпляра класса StandardScaler
+scaler = StandardScaler()
 
-# Получение предсказанных вероятностей от модели
-y_pred = model.predict(X_test_reshaped)
+# Нормализация данных обучающего и тестового наборов
+X_train_normalized = scaler.fit_transform(X_train)
+X_val_normalized = scaler.transform(X_val)
+X_test_normalized = scaler.transform(X_test)
+
+# Изменение формата данных для обучения модели
+X_train_reshaped = X_train_normalized.reshape((X_train_normalized.shape[0], X_train_normalized.shape[1], 1))
+X_val_reshaped = X_val_normalized.reshape((X_val_normalized.shape[0], X_val_normalized.shape[1], 1))
+X_test_reshaped = X_test_normalized.reshape((X_test_normalized.shape[0], X_test_normalized.shape[1], 1))
+
+# Создание модели
+model = Sequential()
+model.add(SimpleRNN(32, input_shape=(X_train_reshaped.shape[1], 1), return_sequences=True, kernel_regularizer=l2(0.01)))
+model.add(Dropout(0.2))
+model.add(SimpleRNN(16, kernel_regularizer=l2(0.01)))
+model.add(Dropout(0.2))
+model.add(Dense(1, activation='sigmoid'))
+
+# Компиляция модели
+model.compile(loss='binary_crossentropy', optimizer=Adam(lr=0.00001), metrics=['accuracy'])
+
+# Обучение модели
+history = model.fit(X_train_reshaped, y_train, batch_size=8, epochs=16, validation_data=(X_val_reshaped, y_val), verbose=1)
 
 # Оценка модели на тестовом наборе
-test_loss, test_accuracy = model.evaluate(X_test_reshaped, y_test)
+y_pred_proba = model.predict(X_test_reshaped)
+y_pred = np.round(y_pred_proba)
 
-train_accuracy = history.history['accuracy']
+# Вычисление метрик
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, y_pred_proba)
 
-print(f'Точность модели на тестовых данных: {test_accuracy}')
+# Вывод результатов
+print(f'Precision: {precision:.4f}')
+print(f'Recall: {recall:.4f}')
+print(f'F1 score: {f1:.4f}')
+print(f'ROC AUC: {roc_auc:.4f}')
 
-# Сохранение модели в файл
-model.save('neural_network_model.h5')
+import datetime
+
+# Save the model to a file with a descriptive name
+timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+model_name = f'Prediction_score_{timestamp}_v1.h5'
+model.save(model_name)
