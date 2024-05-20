@@ -51,7 +51,7 @@ model.add(Dense(1, activation='sigmoid'))
 model.compile(loss='binary_crossentropy', optimizer=Adam(lr=0.00001), metrics=['accuracy'])
 
 # Обучение модели
-history = model.fit(X_train_reshaped, y_train, batch_size=8, epochs=16, validation_data=(X_val_reshaped, y_val), verbose=1)
+history = model.fit(X_train_reshaped, y_train, batch_size=8, epochs=12, validation_data=(X_val_reshaped, y_val), verbose=1)
 
 # Оценка модели на тестовом наборе
 y_pred_proba = model.predict(X_test_reshaped)
