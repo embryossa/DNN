@@ -1,10 +1,15 @@
+import pandas as pd
 import shap
 import numpy as np
+from matplotlib import pyplot as plt
 from tensorflow.keras.models import load_model
 
 model = load_model('Prediction_fitted_score.h5')
+
+
 def preprocess_input_data(X):
     return X
+
 
 # Загрузите и предобработайте данные
 X_train_processed = preprocess_input_data(X_train)
