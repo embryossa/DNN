@@ -21,7 +21,8 @@ for col in columns_to_convert:
 merge_columns = ['Дата пункции', '№ карты', 'ФИО']
 
 # Объединение данных по ключевым столбцам: 'Дата пункции', '№ карты', 'ФИО'
-merged_df = pd.merge(df, cryo_df[['Исход переноса'] + merge_columns], on=merge_columns, how='left', suffixes=('_fresh', '_cryo'))
+merged_df = pd.merge(df, cryo_df[['Исход переноса'] + merge_columns], on=merge_columns, how='left',
+                     suffixes=('_fresh', '_cryo'))
 
 # Замена значений в столбце 'Исход переноса_fresh' значениями из 'Исход переноса_cryo' при условии отсутствия в 'fresh'
 mask = (merged_df['Исход переноса_fresh'].isnull()) & (merged_df['Исход переноса_cryo'].notnull())
@@ -42,16 +43,27 @@ selected_features = [
 df_selected = merged_df[selected_features]
 
 # Обновление столбца 'Исход переноса' для задания бинарной классификации
-df_selected['Исход переноса'] = df_selected['Исход переноса_fresh'].apply(lambda x: 1 if x == 'беременность клиническая' else 0)
+df_selected['Исход переноса'] = df_selected['Исход переноса_fresh'].apply(
+    lambda x: 1 if x == 'беременность клиническая' else 0)
 
 # Удаление временных столбцов
 df_selected.drop(['Исход переноса_fresh', 'Исход переноса_cryo'], axis=1, inplace=True, errors='ignore')
 
+
 # Создаем функцию для расчета баллов KPIScore
 def calculate_kpi_score(row):
+    """
+    Calculates the KPI score for a given row of data.
+
+    Parameters:
+    row (pandas.Series): A row of data containing columns: 'Возраст', 'Количество фолликулов', 'Число инсеминированных', 'Частота оплодотворения', 'Число Bl хор.кач-ва'.
+
+    Returns:
+    int: The calculated KPI score.
+    """
     kpi_score = 0
 
-    # Рассчитываем баллы согласно вашим условиям
+    # Conditions for the 'Возраст' column
     if row['Возраст'] >= 40:
         kpi_score += 1
     elif row['Возраст'] <= 36:
@@ -59,6 +71,7 @@ def calculate_kpi_score(row):
     else:
         kpi_score += 3
 
+    # Conditions for the 'Количество фолликулов' column
     if row['Количество фолликулов'] > 15:
         kpi_score += 5
     elif 8 <= row['Количество фолликулов'] <= 15:
@@ -66,6 +79,7 @@ def calculate_kpi_score(row):
     else:
         kpi_score += 1
 
+    # Conditions for the 'Число инсеминированных' column
     if row['Число инсеминированных'] <= 3:
         kpi_score += 1
     elif 4 <= row['Число инсеминированных'] <= 7:
@@ -73,6 +87,7 @@ def calculate_kpi_score(row):
     else:
         kpi_score += 5
 
+    # Conditions for the 'Частота оплодотворения' column
     if row['Частота оплодотворения'] < 0.5:
         kpi_score += 1
     elif row['Частота оплодотворения'] <= 0.65:
@@ -80,6 +95,7 @@ def calculate_kpi_score(row):
     else:
         kpi_score += 5
 
+    # Conditions for the 'Число Bl хор.кач-ва' column
     if row['Число Bl хор.кач-ва'] == 0:
         kpi_score += 1
     elif row['Число Bl хор.кач-ва'] <= 2:
@@ -88,6 +104,7 @@ def calculate_kpi_score(row):
         kpi_score += 5
 
     return kpi_score
+
 
 # Применяем функцию для создания столбца "KPIScore"
 df_selected['KPIScore'] = df_selected.apply(calculate_kpi_score, axis=1)
