@@ -4,10 +4,9 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, confusion_matrix
 
-from DNN.Предсказания.prediction_model import create_regularized_model
 
 # Создание модели с регуляризацией
-model = create_regularized_model()
+model = load_model('Prediction_fitted_score.h5')
 
 # Количество фолдов
 k_folds = 5
