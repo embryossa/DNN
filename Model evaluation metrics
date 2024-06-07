@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+
 # Построение графика функции потерь
 plt.plot(history.history['loss'], label='train')
 plt.plot(history.history['val_loss'], label='val')
@@ -57,7 +59,8 @@ print(f"Optimal Threshold: {optimal_threshold}")
 #Precision, Accuracy
 '''
 
-from sklearn.metrics import precision_recall_curve, auc, roc_curve, roc_auc_score, accuracy_score, precision_score, recall_score, average_precision_score
+from sklearn.metrics import precision_recall_curve, auc, roc_curve, roc_auc_score, accuracy_score, precision_score, \
+    recall_score, average_precision_score
 
 # Получение предсказаний модели на тестовых данных
 y_pred = model.predict(X_test_reshaped).ravel()
@@ -75,7 +78,8 @@ optimal_threshold_pr = thresholds_pr[optimal_pr_idx]
 # Построение Precision-Recall кривой
 plt.figure(figsize=(8, 6))
 plt.plot(recall, precision, color='green', lw=2, label='Precision-Recall curve (AP = %0.2f)' % average_precision)
-plt.plot(recall[optimal_pr_idx], precision[optimal_pr_idx], 'ro', markersize=8, label=f'Optimal Threshold: {optimal_threshold_pr:.2f}')
+plt.plot(recall[optimal_pr_idx], precision[optimal_pr_idx], 'ro', markersize=8,
+         label=f'Optimal Threshold: {optimal_threshold_pr:.2f}')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('Recall')
