@@ -1,41 +1,61 @@
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from keras.models import Sequential
-from keras.layers import Dense, SimpleRNN, LSTM, Conv1D
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras import regularizers
-from keras.layers import Dropout
-from sklearn.preprocessing import StandardScaler
-from keras.regularizers import l2
-from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras import initializers
+from tensorflow.keras.layers import BatchNormalization
 
-'''
-#Nature (Goyal et al., 2020)
-'''
 
 # Функция для создания модели 
 def create_regularized_model():
+    """
+    This function creates a neural network model with regularization techniques
+    Nature (Goyal et al., 2020)
+
+    Parameters:
+    None
+
+    Returns:
+    model: A compiled Keras model with the specified architecture and training parameters.
+    """
     model = Sequential()
-    model.add(Dense(32, activation='relu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]), kernel_regularizer=regularizers.l2(0.01)))
+
+    # Adding a Dense layer with 32 neurons, ReLU activation, and L2 regularization
+    model.add(Dense(32, activation='relu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
+                    kernel_regularizer=regularizers.l2(0.01)))
+
+    # Adding a Dense layer with 64 neurons, ReLU activation, and L1 regularization
     model.add(Dense(64, activation='relu', kernel_regularizer=regularizers.l1(0.001)))
+
+    # Adding a Dropout layer to prevent overfitting
     model.add(Dropout(0.1))
+
+    # Adding more Dense layers with increasing number of neurons and ReLU activation
     model.add(Dense(128, activation='relu', kernel_initializer=initializers.glorot_uniform()))
     model.add(Dense(256, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+
+    # Adding a BatchNormalization layer to normalize the activations of the previous layer
     model.add(BatchNormalization())
+
+    # Adding more Dense layers with decreasing number of neurons and ReLU activation
     model.add(Dense(512, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+
+    # Adding a Dropout layer to prevent overfitting
     model.add(Dropout(0.2))
+
+    # Adding more Dense layers with decreasing number of neurons and ReLU activation
     model.add(Dense(256, activation='relu', kernel_initializer=initializers.glorot_uniform()))
     model.add(Dense(128, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+
+    # Adding a Dropout layer to prevent overfitting
     model.add(Dropout(0.1))
-    model.add(Dense(64, activation='relu', kernel_initializer=initializers.glorot_uniform()))
-    model.add(Dense(32, activation='relu', kernel_initializer=initializers.glorot_uniform()))
+
+    # Adding a final Dense layer with 1 neuron and sigmoid activation for binary classification
     model.add(Dense(1, activation='sigmoid'))
 
+    # Compiling the model with Adam optimizer, binary crossentropy loss, and accuracy metric
     adam = Adam(learning_rate=0.0001)
     model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+
     return model
+
 
 # Создание модели с регуляризацией
 model = create_regularized_model()
@@ -44,7 +64,8 @@ epochs = 50
 batch_size = 8
 
 # Обучение модели с использованием всех трех наборов данных
-history = model.fit(X_train_reshaped, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val_reshaped, y_val))
+history = model.fit(X_train_reshaped, y_train, epochs=epochs, batch_size=batch_size,
+                    validation_data=(X_val_reshaped, y_val))
 
 # Получение предсказанных вероятностей от модели
 y_pred = model.predict(X_test_reshaped)
@@ -59,23 +80,47 @@ print(f'Точность модели на тестовых данных: {test_
 # Сохранение модели в файл
 model.save('DL_model.h5')
 
-'''
-#STEAM (Liao et al., 2021) https://doi.org/10.1038/s42003-021-01937-1
-'''
+
 # Функция для создания модели
+from tensorflow.keras.layers import LSTM, Dropout
+from tensorflow.keras import regularizers
+
+
 def create_regularized_model():
+    """
+    This function creates a regularized LSTM model for binary classification.
+    STEAM (Liao et al., 2021) https://doi.org/10.1038/s42003-021-01937-1
+
+    Parameters:
+    None
+
+    Returns:
+    model (Sequential): A compiled LSTM model with regularization and dropout layers.
+    """
+
+    # Initialize a Sequential model
     model = Sequential()
+
+    # Add the first LSTM layer with 256 units, 'elu' activation function, input shape,
+    # return sequences, and L2 regularization
     model.add(LSTM(256, activation='elu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
-                        return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+                   return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+
+    # Add the second LSTM layer with 128 units
     model.add(LSTM(128))
+
+    # Add a Dropout layer with 50% dropout rate to prevent overfitting
     model.add(Dropout(0.5))
+
+    # Add a Dense layer with 1 unit and 'sigmoid' activation function for binary classification
     model.add(Dense(1, activation='sigmoid'))
 
-    model.compile(loss='binary_crossentropy',
-              optimizer='adam',
-              metrics=['accuracy'])
+    # Compile the model with 'binary_crossentropy' loss function, 'adam' optimizer, and 'accuracy' metric
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+    # Return the compiled model
     return model
+
 
 # Создание модели с регуляризацией
 model = create_regularized_model()
@@ -83,24 +128,46 @@ model = create_regularized_model()
 epochs = 12
 batch_size = 256
 
-'''
-#Benchaib et al., 2022 https://doi.org/10.1002/rmb2.12486
-'''
 
 # Функция для создания модели
 def create_regularized_model():
+    """
+    This function creates a regularized LSTM model for binary classification.
+    Benchaib et al., 2022 https://doi.org/10.1002/rmb2.12486
+
+    Parameters:
+    None
+
+    Returns:
+    model (Sequential): A compiled LSTM model with regularization and dropout layers.
+    """
+
+    # Initialize a Sequential model
     model = Sequential()
-    model.add(SimpleRNN(26, activation='tanh', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
-                        return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+
+    # Add the first LSTM layer with 256 units, 'tan' activation function, input shape,
+    # return sequences, and L2 regularization
+    model.add(LSTM(256, activation='tanh', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
+                   return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+
+    # Add a Dropout layer with 20% dropout rate to prevent overfitting
     model.add(Dropout(0.2))
-    model.add(SimpleRNN(26, activation='tanh', return_sequences=True, kernel_regularizer=regularizers.l1(0.001)))
+
+    # Add the second LSTM layer with 128 units
+    model.add(LSTM(128))
+
+    # Add a Dropout layer with 20% dropout rate to prevent overfitting
     model.add(Dropout(0.2))
-    model.add(SimpleRNN(26, activation='tanh', return_sequences=False, kernel_regularizer=regularizers.l1(0.001)))
-    model.add(Dropout(0.2))
+
+    # Add a Dense layer with 1 unit and 'sigmoid' activation function for binary classification
     model.add(Dense(1, activation='sigmoid'))
-    adam = Adam(learning_rate=0.001)
-    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Compile the model with 'binary_crossentropy' loss function, 'adam' optimizer, and 'accuracy' metric
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    # Return the compiled model
     return model
+
 
 # Создание модели с регуляризацией
 model = create_regularized_model()
@@ -108,19 +175,41 @@ model = create_regularized_model()
 epochs = 12
 batch_size = 32
 
-'''
-Vogiatzi et al.,2019. doi:10.1007/s10815-019-01498-7
-'''
+
 # Функция для создания модели с применением регуляризации L2 и Dropout
 def create_regularized_model():
+    """
+    This function creates a regularized neural network model for binary classification.
+    Vogiatzi et al.,2019. doi:10.1007/s10815-019-01498-7
+
+    Parameters:
+    None
+
+    Returns:
+    model (Sequential): A compiled neural network model with regularization and dropout layers.
+    """
+
+    # Initialize a Sequential model
     model = Sequential()
+
+    # Add the first Dense layer with 10 units, 'elu' activation function, input shape,
+    # return sequences, and L2 regularization
     model.add(Dense(10, activation='relu', input_shape=(X_train_reshaped.shape[1], X_train_reshaped.shape[2]),
-                        return_sequences=True))
+                    return_sequences=True, kernel_regularizer=regularizers.l2(0.01)))
+
+    # Add the second Dense layer with 2 units
     model.add(Dense(2, activation='relu'))
+
+    # Add a Dense layer with 1 unit and 'sigmoid' activation function for binary classification
     model.add(Dense(1, activation='sigmoid'))
+
+    # Compile the model with 'binary_crossentropy' loss function, 'adam' optimizer, and 'accuracy' metric
     adam = Adam(learning_rate=0.0001)
     model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
+
+    # Return the compiled model
     return model
+
 
 # Параметры обучения
 epochs = 8
@@ -130,14 +219,12 @@ batch_size = 8
 #XGBoost combo DOI: 10.1093/humrep/dead023
 '''
 import numpy as np
-import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense, SimpleRNN, Dropout
 from tensorflow.keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.preprocessing import StandardScaler
-from keras.regularizers import l2
 import xgboost as xgb
 from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import RandomOverSampler
@@ -170,7 +257,8 @@ X_test_reshaped = scaler.transform(X_test).reshape((X_test.shape[0], X_test.shap
 
 # Оверсэмплинг
 ros = RandomOverSampler(random_state=42)
-X_train_reshaped_over, y_train_over = ros.fit_resample(X_train_reshaped.reshape((X_train_reshaped.shape[0], -1)), y_train)
+X_train_reshaped_over, y_train_over = ros.fit_resample(X_train_reshaped.reshape((X_train_reshaped.shape[0], -1)),
+                                                       y_train)
 
 # Изменение формата данных после оверсэмплинга
 X_train_reshaped_over = X_train_reshaped_over.reshape((X_train_reshaped_over.shape[0], X_train_reshaped.shape[1], 1))
@@ -188,6 +276,7 @@ def create_regularized_model():
     model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
+
 # Параметры обучения
 epochs = 12
 batch_size = 8
@@ -196,7 +285,8 @@ batch_size = 8
 nn_model = create_regularized_model()
 
 # Train the neural network model and store the training history
-history_nn = nn_model.fit(X_train_reshaped_over, y_train_over, epochs=epochs, batch_size=batch_size, validation_data=(X_val_reshaped, y_val))
+history_nn = nn_model.fit(X_train_reshaped_over, y_train_over, epochs=epochs, batch_size=batch_size,
+                          validation_data=(X_val_reshaped, y_val))
 
 # Create DMatrix objects for XGBoost
 dtrain = xgb.DMatrix(X_train, label=y_train)
@@ -233,11 +323,9 @@ lr_model.fit(X_train, y_train)
 threshold_pregnant = 20.4 + 3.7 / 2  # Верхний предел для беременности
 threshold_non_pregnant = 15.9 - 5 / 2  # Нижний предел для отсутствия беременности
 
-
 # Получение предсказаний от нейросети
 y_pred_proba_nn = nn_model.predict(X_test_reshaped)
 y_pred_nn = np.where(X_test['KPIScore'] > threshold_pregnant, 1, 0) if np.any(y_pred_proba_nn > 0.5) else 0
-
 
 # Получение предсказаний от XGBoost
 y_pred_xgb = xgb_model.predict(dtest)
@@ -268,7 +356,7 @@ print('Accuracy:', accuracy_score(y_test, y_pred_combined['pred']))
 print('Precision:', precision_score(y_test, y_pred_combined['pred']))
 print('Recall:', recall_score(y_test, y_pred_combined['pred']))
 
-from sklearn.metrics import precision_recall_curve, auc, roc_curve, roc_auc_score, accuracy_score, precision_score, recall_score
+from sklearn.metrics import precision_recall_curve, auc, roc_curve, roc_auc_score
 import matplotlib.pyplot as plt
 
 # Assuming 'mean' column in y_pred_combined is the probability of the positive class
@@ -312,14 +400,24 @@ plt.show()
 #GET model wights
 '''
 
+
 def get_layer_weights(model):
+    """
+    This function retrieves the weights of each layer in a given model.
+
+    Parameters:
+    model (Sequential): The Keras model from which to retrieve the layer weights.
+
+    Returns:
+    layer_weights (list): A list of tuples, where each tuple represents the weights of a layer.
+    The first element of the tuple is the weights, and the second element is the bias.
+    """
     layer_weights = []
     for layer in model.layers:
         weights = layer.get_weights()
         layer_weights.append(weights)
     return layer_weights
 
+
 # Получение весов слоев вашей модели
 model_weights = get_layer_weights(model)
-
-
