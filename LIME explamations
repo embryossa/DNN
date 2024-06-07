@@ -1,10 +1,11 @@
-from lime import lime_tabular
+import explainer
+import numpy as np
 
 # Загрузка сохраненной модели
 from keras.models import load_model
+
 model = load_model('Prediction_fitted_score.h5')
 
-import pandas as pd
 
 # Reshape the predicted probabilities to 2D array
 y_pred_reshaped = y_pred.reshape(-1, 1)  # Assuming your model predicts probabilities for one class
@@ -30,7 +31,8 @@ new_instance_pred = model.predict(new_instance.reshape(1, -1))  # предска
 new_instance_flattened = new_instance.flatten()
 
 # Получение объяснения от LIME для нового примера
-new_exp = explainer.explain_instance(new_instance_flattened, model.predict, num_features=len(selected_features), labels=(0, 0))
+new_exp = explainer.explain_instance(new_instance_flattened, model.predict, num_features=len(selected_features),
+                                     labels=(0, 0))
 
 # Вывод объяснения для нового примера
 new_exp.show_in_notebook()
