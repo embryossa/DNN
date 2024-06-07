@@ -1,13 +1,10 @@
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from keras.models import Sequential
-from keras.layers import Dense, SimpleRNN, LSTM, Conv1D
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras import regularizers
+from keras.layers import Dense, SimpleRNN
 from keras.layers import Dropout
+from keras.models import Sequential
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from keras.regularizers import l2
+from tensorflow.keras import regularizers
+from tensorflow.keras.optimizers import Adam
 
 selected_features = [
     "Возраст", "№ попытки", "Количество фолликулов", "Число ОКК",
@@ -27,7 +24,6 @@ y = df_selected['Исход переноса']
 X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.2, random_state=42)
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.2, random_state=42)
 
-
 # Создание экземпляра класса StandardScaler
 scaler = StandardScaler()
 
@@ -44,6 +40,7 @@ X_train_reshaped = X_train_normalized.reshape((X_train_normalized.shape[0], X_tr
 X_val_reshaped = X_val_normalized.reshape((X_val_normalized.shape[0], X_val_normalized.shape[1], 1))
 X_test_reshaped = X_test_normalized.reshape((X_test_normalized.shape[0], X_test_normalized.shape[1], 1))
 
+
 # Функция для создания модели с применением регуляризации L2 и Dropout
 def create_regularized_model():
     model = Sequential()
@@ -56,6 +53,7 @@ def create_regularized_model():
     model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
+
 # Создание модели с регуляризацией
 model = create_regularized_model()
 # Параметры обучения
@@ -63,7 +61,8 @@ epochs = 12
 batch_size = 8
 
 # Обучение модели с использованием всех трех наборов данных
-history = model.fit(X_train_reshaped, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val_reshaped, y_val))
+history = model.fit(X_train_reshaped, y_train, epochs=epochs, batch_size=batch_size,
+                    validation_data=(X_val_reshaped, y_val))
 
 # Получение предсказанных вероятностей от модели
 y_pred = model.predict(X_test_reshaped)
@@ -77,4 +76,3 @@ print(f'Точность модели на тестовых данных: {test_
 
 # Сохранение модели в файл
 model.save('neural_network_model.h5')
-
