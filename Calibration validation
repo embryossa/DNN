@@ -1,6 +1,10 @@
+import numpy as np
+from mlxtend.classifier import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, confusion_matrix
+
+from DNN.Предсказания.prediction_model import create_regularized_model
 
 # Создание модели с регуляризацией
 model = create_regularized_model()
@@ -25,7 +29,6 @@ odds_ratio_list = []
 # Кросс-валидация
 kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
 for train_index, val_index in kf.split(X_train_reshaped):
-
     X_train, X_val = X_train_reshaped[train_index], X_train_reshaped[val_index]
     y_train, y_val = y.iloc[train_index], y.iloc[val_index]
 
@@ -84,9 +87,11 @@ for train_index, val_index in kf.split(X_train_reshaped):
 # Вывод метрик для каждого фолда
 for i in range(k_folds):
     print(f'Fold {i + 1}:')
-    print(f'Sensitivity: {sensitivity_list[i]}, Specificity: {specificity_list[i]}, PPV: {ppv_list[i]}, NPV: {npv_list[i]}, FPR: {fpr_list[i]}, FNR: {fnr_list[i]}, Accuracy: {accuracy_list[i]}, Odds Ratio: {odds_ratio_list[i]}')
+    print(
+        f'Sensitivity: {sensitivity_list[i]}, Specificity: {specificity_list[i]}, PPV: {ppv_list[i]}, NPV: {npv_list[i]}, FPR: {fpr_list[i]}, FNR: {fnr_list[i]}, Accuracy: {accuracy_list[i]}, Odds Ratio: {odds_ratio_list[i]}')
     print()
 
 # Вывод средних значений метрик
 print('Средние значения:')
-print(f'Sensitivity: {np.mean(sensitivity_list)}, Specificity: {np.mean(specificity_list)}, PPV: {np.mean(ppv_list)}, NPV: {np.mean(npv_list)}, FPR: {np.mean(fpr_list)}, FNR: {np.mean(fnr_list)}, Accuracy: {np.mean(accuracy_list)}, Odds Ratio: {np.mean(odds_ratio_list)}')
+print(
+    f'Sensitivity: {np.mean(sensitivity_list)}, Specificity: {np.mean(specificity_list)}, PPV: {np.mean(ppv_list)}, NPV: {np.mean(npv_list)}, FPR: {np.mean(fpr_list)}, FNR: {np.mean(fnr_list)}, Accuracy: {np.mean(accuracy_list)}, Odds Ratio: {np.mean(odds_ratio_list)}')
